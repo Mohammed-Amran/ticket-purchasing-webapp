@@ -9,9 +9,13 @@
 <style scoped>
 .auth-layout {
   min-height: 100vh;
-
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column; /* ← add this */
+}
+
+main {
+  flex: 1;           /* ← fills all available height */
+  display: flex;
+  width: 100%;     /* ← lets slot content stretch */
 }
 </style>

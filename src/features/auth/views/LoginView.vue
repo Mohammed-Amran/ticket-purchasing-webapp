@@ -55,11 +55,10 @@ async function loginUser() {
 
 <style scoped>
 .login-container {
-  width: 100%;
-
-  min-height: 100vh;
-
+  width: 100%;        /* ← was 900px */
+  min-height: 100vh;  /* ← was height: 500px */
   display: flex;
+  /* remove border-radius and overflow: hidden */
 }
 
 .left-section {
