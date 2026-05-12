@@ -1,26 +1,44 @@
 <script setup>
 import AuthLayout from '../../../app/layouts/AuthLayout.vue'
+import { onMounted } from 'vue'
+import { useAuthStore } from '../stores/authStore'
+import { useRouter } from 'vue-router'
 
-import InputFields from '../../../shared/components/input_fields.vue'
-import PrimaryButton from '../../../shared/components/primary_button.vue'
+const authStore = useAuthStore()
+const router = useRouter()
 
-import { ref } from 'vue'
+// Callback function after Google validates the user
+const handleCredentialResponse = async (response) => {
+  // response.credential is the JWT ID Token we MUST send to the backend
+  console.log('Google Credential Received', response.credential)
 
-import { useAuthStore } from '../stores/authStore';
+  const success = await authStore.loginWithGoogle(response.credential)
+  if (success) {
+    // Redirect to home screen upon success
+    router.push({ name: 'home' })
+  } else {
+    // Show error from authStore
+    alert('Google login failed')
+  }
+}
 
-const email = ref('');
-const password = ref('');
+onMounted(() => {
+  // Initialize Google Identity Services script
+  /* global google */ // Tell ESLint 'google' is global
+  google.accounts.id.initialize({
+    // INSERT YOUR GOOGLE CLIENT ID HERE FROM GOOGLE CLOUD CONSOLE
+    client_id: 'INSERT_YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com',
+    callback: handleCredentialResponse
+  });
 
-const authStore = useAuthStore();
-
-async function loginUser() {
-
-                            await authStore.login(email.value, password.value);
-  
-                           } // Closing brace of the 'loginUser()' method.
-
-
-
+  // Render the official Google Sign-In button
+  google.accounts.id.renderButton(
+    document.getElementById('google-btn-container'), // Container ID
+    { theme: 'outline', size: 'large', text: 'signin_with', width: '300px' } // Customization
+  );
+  // OPTIONAL: Also prompt the one-tap UI
+  google.accounts.id.prompt();
+})
 
 </script>
 
@@ -29,25 +47,27 @@ async function loginUser() {
     <div class="login-container">
       <div class="left-section">
         <img
-          src="https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg"
+          src="https://san-i.co.il/wp-content/uploads/2025/11/Camp-Nou-Renovates-San-Interactive--1024x768.jpg"
           alt="Barcelona Logo"
         />
       </div>
 
       <div class="right-section">
+        <div class="header-row">
+          <img src="https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg" alt="Barcelona Logo" class="logo" />
+          <h2>Ticket Purchasing Platform</h2>
+        </div>
+
         <h1>Welcome Back!</h1>
 
         <p class="subtitle">Sign in to continue</p>
 
         <div class="form-section">
 
-          <InputFields v-model="email" placeholder="Email" type="email" />
-
-          <InputFields v-model="password" placeholder="Password" type="password" />
-
-          <PrimaryButton text="SIGN IN" @click="loginUser" />
+         <div id="google-btn-container"></div>
 
         </div>
+
       </div>
     </div>
   </AuthLayout>
@@ -73,7 +93,9 @@ async function loginUser() {
 }
 
 .left-section img {
-  width: 280px;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .right-section {
@@ -96,6 +118,28 @@ h1 {
   font-size: 42px;
 
   margin-bottom: 10px;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.header-row .logo {
+  width: 85px;
+  height: 85px;
+}
+
+.header-row h2 {
+  font-size: 32px;
+  margin: 0;
+  font-weight: 600;
+  background: linear-gradient(135deg, #00a3e0 0%, #e63946 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .subtitle {
