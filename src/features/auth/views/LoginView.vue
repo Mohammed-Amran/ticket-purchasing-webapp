@@ -6,8 +6,22 @@ import PrimaryButton from '../../../shared/components/primary_button.vue'
 
 import { ref } from 'vue'
 
-const email = ref('')
-const password = ref('')
+import { useAuthStore } from '../stores/authStore';
+
+const email = ref('');
+const password = ref('');
+
+const authStore = useAuthStore();
+
+async function loginUser() {
+
+                            await authStore.login(email.value, password.value);
+  
+                           } // Closing brace of the 'loginUser()' method.
+
+
+
+
 </script>
 
 <template>
@@ -26,11 +40,13 @@ const password = ref('')
         <p class="subtitle">Sign in to continue</p>
 
         <div class="form-section">
+
           <InputFields v-model="email" placeholder="Email" type="email" />
 
           <InputFields v-model="password" placeholder="Password" type="password" />
 
-          <PrimaryButton text="SIGN IN" />
+          <PrimaryButton text="SIGN IN" @click="loginUser" />
+
         </div>
       </div>
     </div>
