@@ -7,20 +7,18 @@ import PopModal from '../../../shared/components/pop_modal.vue'
 
 import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useTicketStore } from '../stores/tickerStore'
+import { useTicketStore } from '../stores/ticketStore'
 
 const route = useRoute()
 const router = useRouter()
 const ticketStore = useTicketStore()
 
-// Get user from localStorage (saved during Google Login)
 const user = ref(JSON.parse(localStorage.getItem('user')))
 
 const showPaymentModal = ref(false)
 const showCartSuccessModal = ref(false)
 const cardNumber = ref('')
 
-// Compute the first available ticket to show
 const currentTicket = computed(() => {
   return ticketStore.availableTickets.length > 0 ? ticketStore.availableTickets[0] : null
 })
@@ -37,14 +35,15 @@ onMounted(() => {
   }
 })
 
+// Let the store handle the API, but we trigger a custom event on the window to tell the NavBar to update
 const handleAddToCart = async () => {
   if (currentTicket.value) {
     try {
-      // Calling the store action directly instead of just emitting to test the modal flow
       await ticketStore.addToCart(user.value.uid, currentTicket.value.ticketId)
       showCartSuccessModal.value = true
+      // Trigger a global event to update the cart counter in NavBar
+      window.dispatchEvent(new Event('cart-updated'))
     } catch (error) {
-       // Handled in store, but we can catch it here if we want specific UI behavior
        console.error("Cart addition failed:", error);
     }
   }
@@ -70,7 +69,7 @@ const submitPayment = async () => {
     if (success) {
       showPaymentModal.value = false
       alert("Payment Successful! Ticket sent to " + user.value.email)
-      router.push('/home') // Send back to home after purchase
+      router.push('/home')
     }
   }
 }
@@ -126,10 +125,7 @@ const submitPayment = async () => {
 
         <div class="right-section">
           <div class="qr-box">
-            <img
-              src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=FCBARCELONA_SECURE_TICKET"
-              alt="QR Code"
-            />
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=FCBARCELONA_SECURE_TICKET" alt="QR Code" />
           </div>
 
           <div class="user-details">
@@ -138,8 +134,12 @@ const submitPayment = async () => {
           </div>
 
           <div class="button-section" v-if="currentTicket">
-            <div @click="handleAddToCart"><PrimaryButton text="ADD TO CART" /></div>
-            <div @click="handlePurchaseClick"><PrimaryButton text="PURCHASE" /></div>
+            <div class="action-btn-wrapper" @click="handleAddToCart">
+              <PrimaryButton text="ADD TO CART" />
+            </div>
+            <div class="action-btn-wrapper" @click="handlePurchaseClick">
+              <PrimaryButton text="PURCHASE" />
+            </div>
           </div>
         </div>
       </div>
@@ -157,13 +157,7 @@ const submitPayment = async () => {
       <div class="modal-content">
         <h2>Simulated Payment</h2>
         <p>Total: ${{ currentTicket?.price }}</p>
-        <input 
-          v-model="cardNumber" 
-          type="text" 
-          placeholder="Enter 16-digit Card Number" 
-          maxlength="16"
-          class="card-input"
-        />
+        <input v-model="cardNumber" type="text" placeholder="Enter 16-digit Card Number" maxlength="16" class="card-input" />
         <div class="modal-actions">
           <button class="cancel-btn" @click="showPaymentModal = false">Cancel</button>
           <button class="pay-btn" @click="submitPayment">Pay Now</button>
@@ -176,7 +170,6 @@ const submitPayment = async () => {
 </template>
 
 <style scoped>
-/* Keeping your original styling structure */
 .checkout-page { min-height: calc(100vh - 200px); background-color: #0f0f0f; padding: 60px; color: white; }
 .ticket-container { background-color: #181818; border-radius: 20px; display: flex; overflow: hidden; min-height: 650px; border: 1px solid #333; }
 .left-section { flex: 2; padding: 50px; border-right: 1px solid #333; }
@@ -193,19 +186,23 @@ const submitPayment = async () => {
 .user-details p { color: #aaa; }
 .button-section { width: 100%; display: flex; flex-direction: column; gap: 20px; }
 
+/* NEW GLOW AND LIFT EFFECT FOR CHECKOUT BUTTONS */
+.action-btn-wrapper {
+  transition: all 0.3s ease;
+  border-radius: 30px; /* Matches your PrimaryButton rounding */
+}
+
+.action-btn-wrapper:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+}
+
 /* Modal Styling */
-.modal-overlay {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000;
-}
-.modal-content {
-  background: #181818; padding: 40px; border-radius: 15px; text-align: center; border: 1px solid #00a3e0; width: 400px;
-}
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal-content { background: #181818; padding: 40px; border-radius: 15px; text-align: center; border: 1px solid #00a3e0; width: 400px; }
 .modal-content h2 { color: white; margin-bottom: 10px; }
 .modal-content p { color: #aaa; margin-bottom: 20px; }
-.card-input {
-  width: 100%; padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #444; background: #222; color: white; font-size: 16px;
-}
+.card-input { width: 100%; padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #444; background: #222; color: white; font-size: 16px; }
 .modal-actions { display: flex; justify-content: space-between; gap: 15px; }
 .cancel-btn { background: transparent; color: white; border: 1px solid #444; padding: 12px 20px; border-radius: 8px; cursor: pointer; flex: 1; }
 .pay-btn { background: linear-gradient(135deg, #00a3e0 0%, #e63946 100%); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1; }

@@ -59,11 +59,12 @@ onMounted(() => {
             class="ticket-card-wrapper"
           >
             <MatchCard
-              :title="'FC Barcelona vs ' + match.opponentTeam"
-              :date="match.date"
-              :time="match.time"
-              image="https://marcaenzona.com/news/uploads/images/image_750x415_67054c877da71.jpg"
-            />
+                      :title="'FC Barcelona vs ' + match.opponentTeam"
+                      :date="match.date"
+                      :time="match.time"
+                      :competition="match.competition"
+                      image="https://marcaenzona.com/news/uploads/images/image_750x415_67054c877da71.jpg"
+/>
           </div>
         </div>
       </section>
