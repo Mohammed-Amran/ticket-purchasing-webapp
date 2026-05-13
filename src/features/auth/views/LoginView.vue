@@ -27,7 +27,7 @@ onMounted(() => {
   /* global google */ // Tell ESLint 'google' is global
   google.accounts.id.initialize({
     // INSERT YOUR GOOGLE CLIENT ID HERE FROM GOOGLE CLOUD CONSOLE
-    client_id: 'INSERT_YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com',
+    client_id: '688377916800-8ockt885f2vkod6lv5b6prg557vdlkcp.apps.googleusercontent.com',
     callback: handleCredentialResponse
   });
 

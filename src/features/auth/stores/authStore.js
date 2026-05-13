@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
-import { loginRequest } from '../api/authApi';
+
+import { googleLoginApiRequest } from '../api/authApi';
 
 export const useAuthStore = defineStore('auth', {
 
@@ -17,33 +18,38 @@ export const useAuthStore = defineStore('auth', {
 
                                                  actions: {
 
-                                                           async login(email, password){
+                                                           async loginWithGoogle(googleIdToken){
 
-                                                                                        try{
+                                                                                                this.loading = true;
 
-                                                                                            this.loading = true;
+                                                                                                this.error = null;
 
-                                                                                            this.error = null;
+                                                                                                try{                                                                                            
 
-                                                                                            const response = await loginRequest(email, password);
+                                                                                                    const response = await googleLoginApiRequest(googleIdToken);
+        
+                                                                                                    this.user = response.user;
+        
+                                                                                                    this.token = googleIdToken;
+        
+                                                                                                    localStorage.setItem('user', JSON.stringify(response.user));
 
-                                                                                            this.user = response.user;
+                                                                                                    return true;
 
-                                                                                            this.token = response.token;
+                                                                                                }
+                                                                                                catch (error){
+     
+                                                                                                              this.error = error.response?.data?.error || 'Google Login failed on Backend';
 
-                                                                                            localStorage.setItem('token', response.token);
+                                                                                                              console.error('Backend Google login error', error)
 
-                                                                                           }
-                                                                                           catch (error){
+                                                                                                              return false;
+                                                                                                             }
+                                                                                                             finally{
 
-                                                                                                         this.error = error.response?.data?.message || 'Login failed';
+                                                                                                                     this.loading = false;
 
-                                                                                                        }
-                                                                                                        finally{
-
-                                                                                                                this.loading = false;
-
-                                                                                                               }
+                                                                                                                    }
 
                                                                                        } // Closing brace of the 'login()' method.
 
