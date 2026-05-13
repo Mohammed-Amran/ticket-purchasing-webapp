@@ -25,17 +25,24 @@ onMounted(() => {
     client_id: '688377916800-8ockt885f2vkod6lv5b6prg557vdlkcp.apps.googleusercontent.com',
     callback: handleCredentialResponse
   })
+
+  // Render the official, highly reliable Google button
+  google.accounts.id.renderButton(
+    document.getElementById('google-btn-container'),
+    { 
+      theme: 'filled_black', // Matches your dark aesthetic
+      size: 'large', 
+      shape: 'pill',         // Clean rounded edges
+      text: 'signin_with'    // Standard Google text
+    }
+  )
 })
-
-const triggerGoogleLogin = () => {
-  google.accounts.id.prompt()
-}
-
 </script>
 
 <template>
   <AuthLayout>
     <div class="login-container">
+      
       <div class="left-section">
         <img
           src="https://san-i.co.il/wp-content/uploads/2025/11/Camp-Nou-Renovates-San-Interactive--1024x768.jpg"
@@ -44,20 +51,27 @@ const triggerGoogleLogin = () => {
       </div>
 
       <div class="right-section">
-        <div class="header-row">
-          <img src="https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg" alt="Barcelona Logo" class="logo" />
-          <h2>Ticket Purchasing Platform</h2>
+        
+        <div class="top-header-bar">
+          <div class="header-row">
+            <img src="https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg" alt="Barcelona Logo" class="logo" />
+            <h2>Ticket Purchasing Platform</h2>
+          </div>
         </div>
 
-        <div class="welcome-row">
-  <h1>Welcome Back!</h1>
+        <div class="login-content-area">
+          <div class="dim-overlay">
+            
+            <div class="welcome-row">
+              <h1>Welcome Back!</h1>
 
-  <div class="form-section">
-    <button class="custom-google-btn" @click="triggerGoogleLogin" title="Sign in with Google">
-      <img src="../../../shared/utils/images/google.png" alt="Google Logo" />
-    </button>
-  </div>
-</div>
+              <div class="form-section">
+                <div id="google-btn-container"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
 
       </div>
     </div>
@@ -65,18 +79,16 @@ const triggerGoogleLogin = () => {
 </template>
 
 <style scoped>
+/* Ensure the page takes up exactly the screen height to prevent scrolling glitches */
 .login-container {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh; 
   display: flex;
 }
 
 .left-section {
   flex: 1;
   background-color: #0a0a0a;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 .left-section img {
@@ -85,42 +97,32 @@ const triggerGoogleLogin = () => {
   object-fit: cover;
 }
 
+/* ================= RIGHT SECTION LAYOUT ================= */
 .right-section {
   flex: 1;
-  background-color: #111;
+  display: flex;
+  flex-direction: column; /* Stacks the header and the background area perfectly */
   color: white;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 60px;
+  background-color: #050505; 
 }
 
-/* NEW: Flexbox wrapper to put them in the same row */
-.welcome-row {
-  display: flex;
-  align-items: center; 
-  justify-content: flex-start; /* This groups them together on the left side */
-  gap: 25px; /* Adjust this number to make the space bigger or smaller! */
-  margin-bottom: 40px; 
+/* ================= TOP HEADER BAR ================= */
+.top-header-bar {
+  background-color: #050505; 
+  padding: 40px 60px; 
+  border-bottom: 1px solid #1a1a1a; 
 }
-
-h1 {
-  font-size: 42px;
-  margin: 0; /* Remove the bottom margin so the flex container handles the spacing */
-}
-
-
 
 .header-row {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 30px;
+  gap: 20px;
 }
 
 .header-row .logo {
-  width: 85px;
-  height: 85px;
+  width: 75px;
+  height: 75px;
+  flex-shrink: 0; 
 }
 
 .header-row h2 {
@@ -133,37 +135,39 @@ h1 {
   background-clip: text;
 }
 
+/* ================= LOGIN CONTENT AREA ================= */
+.login-content-area {
+  flex: 1; /* Stretches to fill all remaining space below the header */
+  background-image: url('https://cadenaser.com/resizer/v2/EYWYKTCIPBCFNA5DCK65U4BW74.jpg?auth=281dbd4fc0ae471f17aab8cf83fc97de3ff2bb852ee7efe346bccc75d9d5a76a');
+  background-size: cover;
+  background-position: center;
+  display: flex; 
+}
+
+.dim-overlay {
+  flex: 1; 
+  background-color: rgba(12, 12, 12, 0.88); /* Deep cinematic darkness */
+  display: flex;
+  align-items: center; /* Vertically centers the content */
+  padding: 0 60px; 
+}
+
+.welcome-row {
+  display: flex;
+  align-items: center; 
+  justify-content: flex-start; 
+  gap: 30px; 
+  width: 100%;
+}
+
+h1 {
+  font-size: 52px; 
+  margin: 0; 
+  letter-spacing: -1px;
+}
+
 .form-section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
 }
-
-/* ================= CUSTOM GOOGLE BUTTON ================= */
-.custom-google-btn {
-  /* Removed white background and fixed dimensions */
-  background: transparent;
-  border: none;
-  display: inline-flex;
-  padding: 0;
-  cursor: pointer;
-  /* Removed button box-shadow */
-}
-
-.custom-google-btn img {
-  /* Made the image drastically larger */
-  width: 65px;
-  height: 65px;
-  object-fit: contain;
-  transition: all 0.3s ease;
-  /* Adds a subtle default shadow directly to the PNG shape */
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
-}
-
-.custom-google-btn:hover img {
-  transform: translateY(-4px) scale(1.08);
-  /* FC Barcelona blue glow applied directly to the logo shape! */
-  filter: drop-shadow(0 8px 20px rgba(0, 163, 224, 0.6)); 
-}
-/* ======================================================== */
 </style>
