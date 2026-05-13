@@ -13,14 +13,21 @@ const loading = ref(false)
 
 const cartItems = ref([])
 const orders = ref([])
-// NEW: Track cart count separately for the badge
 const cartCount = ref(0) 
+
+// NEW: Tracks if the Google image fails to load
+const imageLoadError = ref(false)
 
 const goHome = () => {
   router.push('/home')
 }
 
-// NEW: Function to silently fetch just the count for the badge
+// NEW: Handle user logout
+const handleLogout = () => {
+  localStorage.removeItem('user') // Clear user data
+  router.push('/') // Redirect to your login/landing page
+}
+
 const fetchCartCount = async () => {
   if (user.value) {
     try {
@@ -32,16 +39,18 @@ const fetchCartCount = async () => {
   }
 }
 
-// Run when the navbar loads
+const handleOptimisticUpdate = () => {
+  cartCount.value++ 
+  fetchCartCount() 
+}
+
 onMounted(() => {
   fetchCartCount()
-  // Listen for the custom event we added to CheckoutView
-  window.addEventListener('cart-updated', fetchCartCount)
+  window.addEventListener('cart-updated', handleOptimisticUpdate)
 })
 
-// Clean up the listener if the navbar is destroyed
 onUnmounted(() => {
-  window.removeEventListener('cart-updated', fetchCartCount)
+  window.removeEventListener('cart-updated', handleOptimisticUpdate)
 })
 
 const openCart = async () => {
@@ -54,7 +63,7 @@ const openCart = async () => {
   try {
     const response = await apiClient.get(`/cart/${user.value.uid}`)
     cartItems.value = response.data
-    cartCount.value = response.data.length // Update badge when opened
+    cartCount.value = response.data.length 
   } catch (error) {
     console.error("Failed to load cart:", error)
   } finally {
@@ -108,7 +117,37 @@ const goToCheckoutFromCart = (matchId) => {
         </button>
         <span v-if="cartCount > 0" class="cart-badge">{{ cartCount }}</span>
       </div>
-    </div>
+
+      <div class="user-menu-wrapper">
+        <img 
+          v-if="(user?.photoURL || user?.picture) && !imageLoadError" 
+          :src="user.photoURL || user.picture" 
+          alt="Profile" 
+          class="user-avatar"
+          @error="imageLoadError = true"
+        />
+        <button v-else class="icon-btn fallback-avatar" title="Profile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </button>
+
+        <div class="dropdown-menu">
+          <div class="dropdown-header">
+            <span class="user-name">{{ user?.name || 'Guest User' }}</span>
+          </div>
+          <button class="dropdown-item logout-btn" @click="handleLogout">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            Logout
+          </button>
+        </div>
+      </div>
+      </div>
   </nav>
 
   <PopModal :show="showCartModal" @close="showCartModal = false">
@@ -156,34 +195,113 @@ const goToCheckoutFromCart = (matchId) => {
 .logo-text:hover { opacity: 0.8; }
 .links { display: flex; gap: 25px; align-items: center; }
 
-/* NEW WRAPPER AND BADGE FOR CART */
-.cart-wrapper {
-  position: relative; /* Anchor point for the absolute badge */
-}
-
-.cart-badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background-color: #e63946; /* Bold red to grab attention */
-  color: white;
-  font-size: 12px;
-  font-weight: bold;
-  height: 20px;
-  min-width: 20px;
-  border-radius: 10px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 0 6px;
-  border: 2px solid #050505; /* Creates a cutout effect against the background */
-  pointer-events: none; /* Prevents badge from messing up button clicks */
-}
+.cart-wrapper { position: relative; }
+.cart-badge { position: absolute; top: -5px; right: -5px; background-color: #e63946; color: white; font-size: 12px; font-weight: bold; height: 20px; min-width: 20px; border-radius: 10px; display: flex; justify-content: center; align-items: center; padding: 0 6px; border: 2px solid #050505; pointer-events: none; }
 
 .icon-btn { background: none; border: none; color: #ddd; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; justify-content: center; align-items: center; transition: all 0.3s ease; }
 .icon-btn:hover { color: white; background: linear-gradient(135deg, #004d98 0%, #db0030 100%); box-shadow: 0 0 15px rgba(219, 0, 48, 0.6), 0 0 15px rgba(0, 77, 152, 0.6); transform: translateY(-3px); }
 
-/* Modal Styling */
+/* ================= USER PROFILE STYLES ================= */
+.user-menu-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  /* Adds a tiny gap between cart and profile */
+  margin-left: 10px; 
+}
+
+.user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+  border: 2px solid #333;
+  transition: all 0.3s ease;
+}
+
+/* Gives the image the same glowing hover effect as the icons */
+.user-menu-wrapper:hover .user-avatar,
+.user-menu-wrapper:hover .fallback-avatar {
+  border-color: #00a3e0;
+  box-shadow: 0 0 15px rgba(0, 163, 224, 0.6);
+  transform: translateY(-3px);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 15px; /* Pushes it down slightly */
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  min-width: 200px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  
+  /* Hidden by default, animates in on hover */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  z-index: 1001;
+}
+
+/* This creates an invisible bridge so the mouse doesn't "fall off" while moving down */
+.dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: -15px;
+  left: 0;
+  width: 100%;
+  height: 15px;
+}
+
+.user-menu-wrapper:hover .dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid #333;
+}
+
+.user-name {
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  display: block;
+  /* Cuts off incredibly long names with an ellipsis */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown-item {
+  width: 100%;
+  padding: 15px 20px;
+  background: none;
+  border: none;
+  color: #aaa;
+  text-align: left;
+  cursor: pointer;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.dropdown-item:hover {
+  background-color: #222;
+  color: #e63946; /* Turns red to indicate a destructive/exit action */
+}
+/* ======================================================= */
+
 .modal-title { color: white; margin-bottom: 20px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; }
 .state-msg { text-align: center; color: #aaa; padding: 30px 0; }
 .modal-list { max-height: 450px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; padding-right: 5px; }

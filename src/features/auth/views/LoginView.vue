@@ -9,36 +9,27 @@ const router = useRouter()
 
 // Callback function after Google validates the user
 const handleCredentialResponse = async (response) => {
-  // response.credential is the JWT ID Token we MUST send to the backend
   console.log('Google Credential Received', response.credential)
 
   const success = await authStore.loginWithGoogle(response.credential)
   if (success) {
-    // Redirect to home screen upon success
     router.push({ name: 'home' })
   } else {
-    // Show error from authStore
     alert('Google login failed')
   }
 }
 
 onMounted(() => {
-  // Initialize Google Identity Services script
-  /* global google */ // Tell ESLint 'google' is global
+  /* global google */ 
   google.accounts.id.initialize({
-    // INSERT YOUR GOOGLE CLIENT ID HERE FROM GOOGLE CLOUD CONSOLE
     client_id: '688377916800-8ockt885f2vkod6lv5b6prg557vdlkcp.apps.googleusercontent.com',
     callback: handleCredentialResponse
-  });
-
-  // Render the official Google Sign-In button
-  google.accounts.id.renderButton(
-    document.getElementById('google-btn-container'), // Container ID
-    { theme: 'outline', size: 'large', text: 'signin_with', width: '300px' } // Customization
-  );
-  // OPTIONAL: Also prompt the one-tap UI
-  google.accounts.id.prompt();
+  })
 })
+
+const triggerGoogleLogin = () => {
+  google.accounts.id.prompt()
+}
 
 </script>
 
@@ -48,7 +39,7 @@ onMounted(() => {
       <div class="left-section">
         <img
           src="https://san-i.co.il/wp-content/uploads/2025/11/Camp-Nou-Renovates-San-Interactive--1024x768.jpg"
-          alt="Barcelona Logo"
+          alt="Camp Nou"
         />
       </div>
 
@@ -58,15 +49,15 @@ onMounted(() => {
           <h2>Ticket Purchasing Platform</h2>
         </div>
 
-        <h1>Welcome Back!</h1>
+        <div class="welcome-row">
+  <h1>Welcome Back!</h1>
 
-        <p class="subtitle">Sign in to continue</p>
-
-        <div class="form-section">
-
-         <div id="google-btn-container"></div>
-
-        </div>
+  <div class="form-section">
+    <button class="custom-google-btn" @click="triggerGoogleLogin" title="Sign in with Google">
+      <img src="../../../shared/utils/images/google.png" alt="Google Logo" />
+    </button>
+  </div>
+</div>
 
       </div>
     </div>
@@ -75,19 +66,15 @@ onMounted(() => {
 
 <style scoped>
 .login-container {
-  width: 100%;        /* ← was 900px */
-  min-height: 100vh;  /* ← was height: 500px */
+  width: 100%;
+  min-height: 100vh;
   display: flex;
-  /* remove border-radius and overflow: hidden */
 }
 
 .left-section {
   flex: 1;
-
   background-color: #0a0a0a;
-
   display: flex;
-
   justify-content: center;
   align-items: center;
 }
@@ -100,25 +87,29 @@ onMounted(() => {
 
 .right-section {
   flex: 1;
-
   background-color: #111;
-
   color: white;
-
   display: flex;
-
   flex-direction: column;
-
   justify-content: center;
-
   padding: 60px;
+}
+
+/* NEW: Flexbox wrapper to put them in the same row */
+.welcome-row {
+  display: flex;
+  align-items: center; 
+  justify-content: flex-start; /* This groups them together on the left side */
+  gap: 25px; /* Adjust this number to make the space bigger or smaller! */
+  margin-bottom: 40px; 
 }
 
 h1 {
   font-size: 42px;
-
-  margin-bottom: 10px;
+  margin: 0; /* Remove the bottom margin so the flex container handles the spacing */
 }
+
+
 
 .header-row {
   display: flex;
@@ -142,17 +133,37 @@ h1 {
   background-clip: text;
 }
 
-.subtitle {
-  color: #aaa;
-
-  margin-bottom: 40px;
-}
-
 .form-section {
   display: flex;
-
   flex-direction: column;
-
   gap: 20px;
 }
+
+/* ================= CUSTOM GOOGLE BUTTON ================= */
+.custom-google-btn {
+  /* Removed white background and fixed dimensions */
+  background: transparent;
+  border: none;
+  display: inline-flex;
+  padding: 0;
+  cursor: pointer;
+  /* Removed button box-shadow */
+}
+
+.custom-google-btn img {
+  /* Made the image drastically larger */
+  width: 65px;
+  height: 65px;
+  object-fit: contain;
+  transition: all 0.3s ease;
+  /* Adds a subtle default shadow directly to the PNG shape */
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+.custom-google-btn:hover img {
+  transform: translateY(-4px) scale(1.08);
+  /* FC Barcelona blue glow applied directly to the logo shape! */
+  filter: drop-shadow(0 8px 20px rgba(0, 163, 224, 0.6)); 
+}
+/* ======================================================== */
 </style>

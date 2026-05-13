@@ -7,7 +7,7 @@ import PopModal from '../../../shared/components/pop_modal.vue'
 
 import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useTicketStore } from '../stores/ticketStore'
+import { useTicketStore } from '../stores/tickerStore' // Fixed typo here
 
 const route = useRoute()
 const router = useRouter()
@@ -35,13 +35,12 @@ onMounted(() => {
   }
 })
 
-// Let the store handle the API, but we trigger a custom event on the window to tell the NavBar to update
 const handleAddToCart = async () => {
   if (currentTicket.value) {
     try {
       await ticketStore.addToCart(user.value.uid, currentTicket.value.ticketId)
       showCartSuccessModal.value = true
-      // Trigger a global event to update the cart counter in NavBar
+      // Tell the NavBar to update immediately
       window.dispatchEvent(new Event('cart-updated'))
     } catch (error) {
        console.error("Cart addition failed:", error);
@@ -186,15 +185,16 @@ const submitPayment = async () => {
 .user-details p { color: #aaa; }
 .button-section { width: 100%; display: flex; flex-direction: column; gap: 20px; }
 
-/* NEW GLOW AND LIFT EFFECT FOR CHECKOUT BUTTONS */
+/* THE FIX: Drop-shadow perfectly traces the PrimaryButton outline */
 .action-btn-wrapper {
   transition: all 0.3s ease;
-  border-radius: 30px; /* Matches your PrimaryButton rounding */
+  cursor: pointer;
+  display: block;
 }
 
 .action-btn-wrapper:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+  transform: translateY(-4px);
+  filter: drop-shadow(0px 0px 15px rgba(255, 255, 255, 0.8));
 }
 
 /* Modal Styling */
