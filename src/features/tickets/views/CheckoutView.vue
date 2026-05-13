@@ -1,6 +1,10 @@
 <script setup>
 import MainLayout from '../../../app/layouts/MainLayout.vue'
 import PrimaryButton from '../../../shared/components/primary_button.vue'
+import NavBar from '../../../shared/components/Navigation_bar.vue'
+import FooterSection from '../../../shared/components/footer_section.vue'
+import PopModal from '../../../shared/components/pop_modal.vue'
+
 import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTicketStore } from '../stores/tickerStore'
@@ -13,6 +17,7 @@ const ticketStore = useTicketStore()
 const user = ref(JSON.parse(localStorage.getItem('user')))
 
 const showPaymentModal = ref(false)
+const showCartSuccessModal = ref(false)
 const cardNumber = ref('')
 
 // Compute the first available ticket to show
@@ -32,9 +37,16 @@ onMounted(() => {
   }
 })
 
-const handleAddToCart = () => {
+const handleAddToCart = async () => {
   if (currentTicket.value) {
-    ticketStore.addToCart(user.value.uid, currentTicket.value.ticketId)
+    try {
+      // Calling the store action directly instead of just emitting to test the modal flow
+      await ticketStore.addToCart(user.value.uid, currentTicket.value.ticketId)
+      showCartSuccessModal.value = true
+    } catch (error) {
+       // Handled in store, but we can catch it here if we want specific UI behavior
+       console.error("Cart addition failed:", error);
+    }
   }
 }
 
@@ -44,7 +56,7 @@ const handlePurchaseClick = () => {
 
 const submitPayment = async () => {
   if (cardNumber.value.length < 16) {
-    alert("Please enter a valid simulated card number.")
+    alert("Please enter a valid simulated 16-digit card number.")
     return
   }
   
@@ -66,6 +78,8 @@ const submitPayment = async () => {
 
 <template>
   <MainLayout>
+    <NavBar />
+
     <div class="checkout-page">
       <p v-if="ticketStore.loading">Loading match details...</p>
       <p v-else-if="!ticketStore.currentMatch">No match found.</p>
@@ -131,6 +145,14 @@ const submitPayment = async () => {
       </div>
     </div>
 
+    <PopModal :show="showCartSuccessModal" @close="showCartSuccessModal = false">
+      <div style="text-align: center;">
+        <h2 style="color: #00a3e0; margin-bottom: 15px;">Success!</h2>
+        <p>The ticket has been added to your cart.</p>
+        <button class="pay-btn" style="margin-top: 20px; width: 100%;" @click="showCartSuccessModal = false">Continue Browsing</button>
+      </div>
+    </PopModal>
+
     <div v-if="showPaymentModal" class="modal-overlay">
       <div class="modal-content">
         <h2>Simulated Payment</h2>
@@ -148,12 +170,14 @@ const submitPayment = async () => {
         </div>
       </div>
     </div>
+
+    <FooterSection />
   </MainLayout>
 </template>
 
 <style scoped>
 /* Keeping your original styling structure */
-.checkout-page { min-height: 100vh; background-color: #0f0f0f; padding: 60px; color: white; }
+.checkout-page { min-height: calc(100vh - 200px); background-color: #0f0f0f; padding: 60px; color: white; }
 .ticket-container { background-color: #181818; border-radius: 20px; display: flex; overflow: hidden; min-height: 650px; border: 1px solid #333; }
 .left-section { flex: 2; padding: 50px; border-right: 1px solid #333; }
 .ticket-header h1 { font-size: 42px; margin-bottom: 10px; }
