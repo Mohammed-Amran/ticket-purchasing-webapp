@@ -68,6 +68,10 @@ const submitPayment = async () => {
     if (success) {
       showPaymentModal.value = false
       alert("Payment Successful! Ticket sent to " + user.value.email)
+      
+      // THE FIX: Tell the rest of the app (like the NavBar) to refresh the cart!
+      window.dispatchEvent(new Event('cart-updated'))
+      
       router.push('/home')
     }
   }

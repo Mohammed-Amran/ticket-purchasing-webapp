@@ -15,17 +15,15 @@ const cartItems = ref([])
 const orders = ref([])
 const cartCount = ref(0) 
 
-// NEW: Tracks if the Google image fails to load
 const imageLoadError = ref(false)
 
 const goHome = () => {
   router.push('/home')
 }
 
-// NEW: Handle user logout
 const handleLogout = () => {
-  localStorage.removeItem('user') // Clear user data
-  router.push('/') // Redirect to your login/landing page
+  localStorage.removeItem('user') 
+  router.push('/') 
 }
 
 const fetchCartCount = async () => {
@@ -39,18 +37,18 @@ const fetchCartCount = async () => {
   }
 }
 
-const handleOptimisticUpdate = () => {
-  cartCount.value++ 
+// THE FIX: We removed cartCount.value++ so it just accurately fetches the new DB count
+const handleCartUpdate = () => {
   fetchCartCount() 
 }
 
 onMounted(() => {
   fetchCartCount()
-  window.addEventListener('cart-updated', handleOptimisticUpdate)
+  window.addEventListener('cart-updated', handleCartUpdate)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('cart-updated', handleOptimisticUpdate)
+  window.removeEventListener('cart-updated', handleCartUpdate)
 })
 
 const openCart = async () => {
@@ -91,6 +89,26 @@ const openOrders = async () => {
 const goToCheckoutFromCart = (matchId) => {
   showCartModal.value = false
   router.push({ name: 'checkout', query: { matchId: matchId } })
+}
+
+// NEW: Remove specific item from cart without purchasing
+const removeItemFromCart = async (ticketId) => {
+  if (!user.value) return;
+  
+  try {
+    // 1. Tell backend to delete it
+    await apiClient.delete(`/cart/${user.value.uid}/${ticketId}`);
+    
+    // 2. Remove it locally so the UI updates instantly without reloading
+    cartItems.value = cartItems.value.filter(item => item.ticketId !== ticketId);
+    cartCount.value = cartItems.value.length;
+    
+    // 3. Inform the rest of the app
+    window.dispatchEvent(new Event('cart-updated'));
+  } catch (error) {
+    console.error("Failed to remove item:", error);
+    alert("Could not remove ticket. Please try again.");
+  }
 }
 </script>
 
@@ -147,7 +165,7 @@ const goToCheckoutFromCart = (matchId) => {
           </button>
         </div>
       </div>
-      </div>
+    </div>
   </nav>
 
   <PopModal :show="showCartModal" @close="showCartModal = false">
@@ -155,17 +173,30 @@ const goToCheckoutFromCart = (matchId) => {
     <div v-if="loading" class="state-msg">Loading cart...</div>
     <div v-else-if="cartItems.length === 0" class="state-msg">Your cart is completely empty.</div>
     <div v-else class="modal-list">
+      
       <div v-for="item in cartItems" :key="item.cart_id" class="modal-item cart-item" @click="goToCheckoutFromCart(item.matchId)">
         <div class="item-info">
           <h3>vs {{ item.opponentTeam }}</h3>
           <p>{{ item.date }}</p>
           <span class="seat-badge">Gate {{ item.gateNo }} | Sec {{ item.sectionNo }} | Seat {{ item.seatNo }}</span>
         </div>
+        
         <div class="item-action">
           <span class="price">${{ item.price }}</span>
-          <span class="checkout-hint">Checkout ➔</span>
+          <div class="action-row">
+            <button class="remove-btn" @click.stop="removeItemFromCart(item.ticketId)" title="Remove Item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+            </button>
+            <span class="checkout-hint">Checkout ➔</span>
+          </div>
         </div>
       </div>
+
     </div>
   </PopModal>
 
@@ -201,106 +232,17 @@ const goToCheckoutFromCart = (matchId) => {
 .icon-btn { background: none; border: none; color: #ddd; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; justify-content: center; align-items: center; transition: all 0.3s ease; }
 .icon-btn:hover { color: white; background: linear-gradient(135deg, #004d98 0%, #db0030 100%); box-shadow: 0 0 15px rgba(219, 0, 48, 0.6), 0 0 15px rgba(0, 77, 152, 0.6); transform: translateY(-3px); }
 
-/* ================= USER PROFILE STYLES ================= */
-.user-menu-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  /* Adds a tiny gap between cart and profile */
-  margin-left: 10px; 
-}
+.user-menu-wrapper { position: relative; display: flex; align-items: center; margin-left: 10px; }
+.user-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 2px solid #333; transition: all 0.3s ease; }
+.user-menu-wrapper:hover .user-avatar, .user-menu-wrapper:hover .fallback-avatar { border-color: #00a3e0; box-shadow: 0 0 15px rgba(0, 163, 224, 0.6); transform: translateY(-3px); }
 
-.user-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  object-fit: cover;
-  cursor: pointer;
-  border: 2px solid #333;
-  transition: all 0.3s ease;
-}
-
-/* Gives the image the same glowing hover effect as the icons */
-.user-menu-wrapper:hover .user-avatar,
-.user-menu-wrapper:hover .fallback-avatar {
-  border-color: #00a3e0;
-  box-shadow: 0 0 15px rgba(0, 163, 224, 0.6);
-  transform: translateY(-3px);
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 15px; /* Pushes it down slightly */
-  background-color: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 12px;
-  min-width: 200px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-  
-  /* Hidden by default, animates in on hover */
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-10px);
-  transition: all 0.3s ease;
-  z-index: 1001;
-}
-
-/* This creates an invisible bridge so the mouse doesn't "fall off" while moving down */
-.dropdown-menu::before {
-  content: '';
-  position: absolute;
-  top: -15px;
-  left: 0;
-  width: 100%;
-  height: 15px;
-}
-
-.user-menu-wrapper:hover .dropdown-menu {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.dropdown-header {
-  padding: 15px 20px;
-  border-bottom: 1px solid #333;
-}
-
-.user-name {
-  color: white;
-  font-weight: bold;
-  font-size: 16px;
-  display: block;
-  /* Cuts off incredibly long names with an ellipsis */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.dropdown-item {
-  width: 100%;
-  padding: 15px 20px;
-  background: none;
-  border: none;
-  color: #aaa;
-  text-align: left;
-  cursor: pointer;
-  font-size: 15px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  transition: all 0.2s ease;
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
-}
-
-.dropdown-item:hover {
-  background-color: #222;
-  color: #e63946; /* Turns red to indicate a destructive/exit action */
-}
-/* ======================================================= */
+.dropdown-menu { position: absolute; top: 100%; right: 0; margin-top: 15px; background-color: #1a1a1a; border: 1px solid #333; border-radius: 12px; min-width: 200px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.3s ease; z-index: 1001; }
+.dropdown-menu::before { content: ''; position: absolute; top: -15px; left: 0; width: 100%; height: 15px; }
+.user-menu-wrapper:hover .dropdown-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+.dropdown-header { padding: 15px 20px; border-bottom: 1px solid #333; }
+.user-name { color: white; font-weight: bold; font-size: 16px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dropdown-item { width: 100%; padding: 15px 20px; background: none; border: none; color: #aaa; text-align: left; cursor: pointer; font-size: 15px; display: flex; align-items: center; gap: 10px; transition: all 0.2s ease; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
+.dropdown-item:hover { background-color: #222; color: #e63946; }
 
 .modal-title { color: white; margin-bottom: 20px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; }
 .state-msg { text-align: center; color: #aaa; padding: 30px 0; }
@@ -313,10 +255,21 @@ const goToCheckoutFromCart = (matchId) => {
 .item-info p { margin: 0 0 10px 0; color: #aaa; font-size: 14px; }
 .seat-badge { background: #222; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #ddd; border: 1px solid #444; }
 .ref-text { margin-top: 10px !important; font-size: 11px !important; color: #666 !important; }
-.cart-item:hover { border-color: #00a3e0; cursor: pointer; background: #1c1c1c; transform: translateX(5px); }
+
+/* Clickable Cart Hover logic */
+.cart-item { cursor: pointer; }
+.cart-item:hover { border-color: #00a3e0; background: #1c1c1c; transform: translateX(5px); }
 .item-action { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 .price { font-size: 22px; font-weight: bold; color: #00a3e0; }
+
+/* Action row for Remove + Checkout text */
+.action-row { display: flex; align-items: center; gap: 15px; }
 .checkout-hint { font-size: 12px; color: #aaa; }
 .cart-item:hover .checkout-hint { color: #00a3e0; }
+
+/* The new visual Remove Button styling */
+.remove-btn { background: rgba(230, 57, 70, 0.1); border: 1px solid #e63946; color: #e63946; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+.remove-btn:hover { background: #e63946; color: white; transform: scale(1.05); }
+
 .paid-badge { background: rgba(0, 163, 224, 0.1); color: #00a3e0; padding: 6px 12px; border-radius: 20px; font-weight: bold; border: 1px solid #00a3e0; }
 </style>

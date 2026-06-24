@@ -19,23 +19,44 @@ const handleCredentialResponse = async (response) => {
   }
 }
 
-onMounted(() => {
+// NEW: A dedicated function to initialize Google once it's actually loaded
+const initGoogleSignIn = () => {
   /* global google */ 
   google.accounts.id.initialize({
     client_id: '688377916800-8ockt885f2vkod6lv5b6prg557vdlkcp.apps.googleusercontent.com',
     callback: handleCredentialResponse
   })
 
-  // Render the official, highly reliable Google button
   google.accounts.id.renderButton(
     document.getElementById('google-btn-container'),
     { 
-      theme: 'filled_black', // Matches your dark aesthetic
+      theme: 'filled_black', 
       size: 'large', 
-      shape: 'pill',         // Clean rounded edges
-      text: 'signin_with'    // Standard Google text
+      shape: 'pill',         
+      text: 'signin_with'    
     }
   )
+}
+
+onMounted(() => {
+  // Check if the Google script is already loaded
+  if (window.google && window.google.accounts) {
+    initGoogleSignIn()
+    return
+  }
+
+  // If not loaded, inject the script into the document and wait for it
+  const script = document.createElement('script')
+  script.src = 'https://accounts.google.com/gsi/client'
+  script.async = true
+  script.defer = true
+  
+  // When the script finishes downloading, trigger our setup function
+  script.onload = () => {
+    initGoogleSignIn()
+  }
+  
+  document.head.appendChild(script)
 })
 </script>
 
@@ -45,7 +66,7 @@ onMounted(() => {
       
       <div class="left-section">
         <img
-          src="https://san-i.co.il/wp-content/uploads/2025/11/Camp-Nou-Renovates-San-Interactive--1024x768.jpg"
+          src="https://www.fcbarcelona.com/fcbarcelona/photo/2025/11/22/1a6fffc4-0d01-4a8c-aec7-a96349e6672c/_GP22073.jpg"
           alt="Camp Nou"
         />
       </div>
